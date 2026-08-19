@@ -30,7 +30,21 @@ Three layers guard against turning off every screen and locking yourself out:
 
 macOS 14 or later. No permissions are requested — no Accessibility, no Screen Recording.
 
-## Install
+## Download
+
+Grab the zip from [Releases](https://github.com/zziggzol/display-snooze/releases), unzip it, and move `DisplaySnooze.app` to `/Applications`.
+
+The app is **not signed with an Apple Developer ID**, so macOS blocks it the first time you open it. To allow it:
+
+1. Open the app. macOS refuses, saying it cannot verify the developer
+2. Go to **System Settings → Privacy & Security**, scroll down to **Security**, and click **Open Anyway** next to DisplaySnooze
+3. Confirm with **Open**
+
+You only do this once. On macOS 15 and later the old Control-click shortcut no longer works, so System Settings is the only route.
+
+Signing properly requires an Apple Developer Program membership at $99 a year, which is more than a one-feature tool is worth. Building from source skips the prompt entirely, because the app is then signed by your own machine.
+
+## Build from source
 
 Xcode is not required. The Command Line Tools are enough.
 
@@ -86,6 +100,15 @@ DisplaySnooze deliberately does one thing. If you want more, these are all free 
 | [Dimly](https://github.com/punshnut/macos-dimly) | Brightness, blackout, and DDC sleep |
 | [disdim](https://github.com/makalin/disdim) | Minimal, DDC-based display off |
 
+## Credits
+
+- The app icon redraws the [lucide](https://lucide.dev) `monitor-off` glyph (ISC)
+- The menu bar icon uses Apple's SF Symbols, in the UI only
+- The OKLCh conversion follows Björn Ottosson's [Oklab](https://bottosson.github.io/posts/oklab/)
+- Trying `SLSConfigureDisplayEnabled` before the older name is an idea taken from [InternalDisplayOff](https://github.com/RonaldPark89/InternalDisplayOff)
+
+Full license texts are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).

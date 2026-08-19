@@ -25,6 +25,20 @@ Lunar や BetterDisplay の「ディスプレイを切る」機能だけが欲�
 2. `⌃⌥⌘D` でいつでも全部戻せる
 3. 設定はセッション限り（`.forSession`）なので、再起動すれば必ず元に戻る
 
+## ダウンロード
+
+[Releases](https://github.com/zziggzol/display-snooze/releases) から zip を取り、展開して `DisplaySnooze.app` を `/Applications` に入れる。
+
+このアプリは **Apple Developer ID で署名していない**ので、初回だけ macOS が起動を止める。許可の手順:
+
+1. アプリを開く。「開発元を確認できないため開けません」と言われる
+2. **システム設定 → プライバシーとセキュリティ** を開き、**セキュリティ**まで下がって、DisplaySnooze の横の **このまま開く** を押す
+3. **開く** で確定する
+
+必要なのは初回だけ。macOS 15 以降は昔の「右クリック → 開く」が効かないので、システム設定が唯一の道。
+
+正式な署名には Apple Developer Program（年 $99）が要る。1機能のツールに払う額ではないと判断した。**ソースからビルドすればこの確認は出ない**（自分のマシンで署名されるため）。
+
 ## ビルドとインストール
 
 Xcode は不要。Command Line Tools だけで作れる。
@@ -93,3 +107,16 @@ MacBook Air (M5) / macOS 26.6.1 / EIZO CG2420 を変換アダプタ経由で接�
 | `scripts/make-icon.swift` | アイコンの描画と `.iconset` の書き出し |
 | `scripts/build-app.sh` | `.app` の組み立てと ad-hoc 署名 |
 | `scripts/install.sh` | `/Applications` への配置と入れ替え |
+
+## 使っているもの
+
+- アプリアイコンは [lucide](https://lucide.dev) の `monitor-off` を描き直したもの（ISC）
+- メニューバーのアイコンは Apple の SF Symbols。UI の中だけで使う決まりなので、アプリアイコンには使っていない
+- OKLCh の変換は Björn Ottosson の [Oklab](https://bottosson.github.io/posts/oklab/) に従う
+- `SLSConfigureDisplayEnabled` を旧名より先に試す考えは [InternalDisplayOff](https://github.com/RonaldPark89/InternalDisplayOff) から得た
+
+ライセンス全文は [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。
+
+## ライセンス
+
+MIT — [LICENSE](LICENSE) を参照。
