@@ -1,10 +1,12 @@
-// グローバルホットキーの登録。Carbon の RegisterEventHotKey を使うので追加の権限許可が要らない。
-// 画面を切り離してメニューバーに手が届かなくなったときに、確実に戻すための保険として置いている。
+// Registration of the global hotkey. Carbon's RegisterEventHotKey is used because it
+// needs no permission grant from the user.
+// It exists as a way out of the state where a display has been detached and the menu
+// bar is no longer reachable.
 
 import AppKit
 import Carbon.HIToolbox
 
-/// C の関数ポインタはクロージャを捕まえられないので、押されたときの動作をここに置く。
+/// A C function pointer cannot capture, so what to run on press lives here.
 nonisolated(unsafe) private var registeredAction: (@MainActor () -> Void)?
 
 @MainActor
@@ -12,11 +14,11 @@ final class HotKey {
     private var hotKeyRef: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
 
-    /// ホットキーを1つ登録する。他のアプリに先を越されている場合は nil を返す。
+    /// Registers one hotkey. Returns nil if another app already holds the combination.
     /// - Parameters:
-    ///   - keyCode: kVK_ANSI_D などの仮想キーコード。
-    ///   - modifiers: controlKey / optionKey / cmdKey の組み合わせ。
-    ///   - action: 押されたときに main アクター上で実行する処理。
+    ///   - keyCode: A virtual key code such as kVK_ANSI_D.
+    ///   - modifiers: Any combination of controlKey, optionKey and cmdKey.
+    ///   - action: Run on the main actor when the combination is pressed.
     init?(keyCode: UInt32, modifiers: UInt32, action: @escaping @MainActor () -> Void) {
         registeredAction = action
 
@@ -45,7 +47,7 @@ final class HotKey {
         }
     }
 
-    /// 登録を解除する。アプリ終了時に呼ぶ。
+    /// Releases the registration. Called when the app quits.
     func unregister() {
         if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
         if let handlerRef { RemoveEventHandler(handlerRef) }

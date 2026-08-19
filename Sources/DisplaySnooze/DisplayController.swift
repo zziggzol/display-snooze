@@ -1,19 +1,20 @@
-// 画面を macOS のレイアウトから切り離す/戻す処理の中核。
-// SkyLight の非公開 API への依存をこのファイルだけに閉じ込め、他のファイルからは普通の型として見えるようにする。
+// Detaching a display from the macOS display layout, and putting it back.
+// The dependency on SkyLight's private API is confined to this file; everything
+// else in the app sees an ordinary Swift type.
 
 import AppKit
 import CoreGraphics
 
-/// メニューに出すために必要な、画面1枚ぶんの情報。
+/// One display, reduced to what the menu needs to show it.
 struct DisplayInfo {
     let id: CGDirectDisplayID
     let name: String
     let isBuiltin: Bool
-    /// 描画対象になっているか。false なら切り離し済み。
+    /// Whether the system is drawing to it. False means it is currently detached.
     let isActive: Bool
 }
 
-/// 切り離しに失敗した、または拒否した理由。
+/// Why a detach failed, or was refused.
 enum DisplayControlError: LocalizedError {
     case symbolUnavailable
     case wouldLeaveNoScreen
@@ -31,26 +32,28 @@ enum DisplayControlError: LocalizedError {
     }
 }
 
-/// SkyLight の CGSConfigureDisplayEnabled の型。
-/// 公開されていない関数なので、ヘッダではなく実行時に dlsym で引く。
+/// Signature of SkyLight's display-enable call.
+/// It is not declared in any public header, so it is looked up at runtime with dlsym.
 private typealias ConfigureDisplayEnabled =
     @convention(c) (CGDisplayConfigRef?, CGDirectDisplayID, Bool) -> CGError
 
 @MainActor
 final class DisplayController {
-    /// このアプリが切り離した画面。OS の一覧から消えても項目を出し続けるために覚えておく。
+    /// Displays this app has detached. Remembered so they keep a menu entry even
+    /// once the system stops listing them.
     private(set) var disabled: Set<CGDirectDisplayID> = []
 
-    /// 切り離すと画面名が取れなくなるので、見えているうちに控えておく。
+    /// A detached display no longer reports a name, so names are cached while visible.
     private var cachedNames: [CGDirectDisplayID: String] = [:]
 
     private let configureDisplayEnabled: ConfigureDisplayEnabled?
 
-    /// 切り離し機能が使えるか。使えない macOS では UI 側で理由を出す。
+    /// Whether detaching works at all. When it does not, the menu says so instead of failing silently.
     var isSupported: Bool { configureDisplayEnabled != nil }
 
-    /// 同じ処理が SkyLight では新旧2つの名前で、CoreGraphics では旧名だけで公開されている。
-    /// どれかが将来消えても動くよう、新しい名前から順に探す。
+    /// The same call is exported by SkyLight under both a new and an old name, and by
+    /// CoreGraphics under the old name only. Trying them newest-first keeps the app
+    /// working if any single one is withdrawn.
     private static let candidates: [(library: String, symbol: String)] = [
         ("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight", "SLSConfigureDisplayEnabled"),
         ("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight", "CGSConfigureDisplayEnabled"),
@@ -68,7 +71,7 @@ final class DisplayController {
         configureDisplayEnabled = resolved
     }
 
-    /// 繋がっている画面を、切り離し済みのものも含めて返す。内蔵を先頭に並べる。
+    /// Every attached display, including ones this app has detached. Built-in first.
     func displays() -> [DisplayInfo] {
         refreshNames()
         let active = Set(Self.enumerate(CGGetActiveDisplayList))
@@ -88,11 +91,11 @@ final class DisplayController {
             }
     }
 
-    /// 画面1枚を切り離す、または戻す。
+    /// Detaches a single display, or puts it back.
     /// - Parameters:
-    ///   - id: 対象の画面。
-    ///   - enabled: true で戻し、false で切り離す。
-    /// - Throws: 最後の1枚を切ろうとした場合や、OS が設定変更を拒否した場合。
+    ///   - id: The display to act on.
+    ///   - enabled: True restores the display, false detaches it.
+    /// - Throws: When this would leave no active display, or when macOS refuses the change.
     func setEnabled(_ id: CGDirectDisplayID, _ enabled: Bool) throws {
         guard let configure = configureDisplayEnabled else {
             throw DisplayControlError.symbolUnavailable
@@ -111,20 +114,22 @@ final class DisplayController {
             throw DisplayControlError.configurationFailed(applied)
         }
 
-        // .forSession なので再起動すれば必ず元に戻る。詰んだときの最後の逃げ道。
+        // .forSession is what makes a reboot undo everything — the last way out if
+        // the user ever ends up stuck.
         let completed = CGCompleteDisplayConfiguration(config, .forSession)
         guard completed == .success else { throw DisplayControlError.configurationFailed(completed) }
 
         if enabled { disabled.remove(id) } else { disabled.insert(id) }
     }
 
-    /// 切り離してある画面をすべて戻す。ホットキーとアプリ終了時の保険。
+    /// Restores every detached display. Backs the hotkey and runs on quit.
     func restoreAll() {
         for id in disabled { try? setEnabled(id, true) }
         disabled.removeAll()
     }
 
-    /// 今見えている画面の名前を控え直す。切り離し中の画面は OS から名前が取れないので上書きしない。
+    /// Re-reads the names of the displays currently visible. Detached displays report no
+    /// name, so their cached entries are left alone.
     private func refreshNames() {
         for screen in NSScreen.screens {
             let key = NSDeviceDescriptionKey("NSScreenNumber")
@@ -133,7 +138,7 @@ final class DisplayController {
         }
     }
 
-    /// CGGetActiveDisplayList / CGGetOnlineDisplayList の二段階呼び出しをまとめる。
+    /// Wraps the two-pass calling convention of CGGetActiveDisplayList / CGGetOnlineDisplayList.
     private static func enumerate(
         _ list: (UInt32, UnsafeMutablePointer<CGDirectDisplayID>?, UnsafeMutablePointer<UInt32>?) -> CGError
     ) -> [CGDirectDisplayID] {

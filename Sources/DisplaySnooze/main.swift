@@ -1,5 +1,6 @@
-// アプリの起動点。Dock に出さないメニューバー常駐アプリとして立ち上げる。
-// 画面の切り替えは DisplayController、見た目は StatusMenu、保険のホットキーは HotKey が持つ。
+// Entry point. Starts as a menu bar app with no Dock presence.
+// DisplayController owns the display switching, StatusMenu the presentation, and
+// HotKey the escape hatch.
 
 import AppKit
 import Carbon.HIToolbox
@@ -26,7 +27,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        // 終了すれば必ず画面が戻るようにしておく。切り離したまま行方不明にならないための保険。
+        // Quitting always brings the displays back, so a detached display can never
+        // outlive the app that detached it.
         controller?.restoreAll()
         hotKey?.unregister()
     }

@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
-# swift build で作った実行ファイルとアイコンを .app バンドルに詰め直す。Xcode 無しで動かすための最小手順。
-# 中身は決まった数個のファイルだけなので、古いバンドルは消さず上書きで足りる。
+# Wraps the executable from swift build, plus the icon, into an .app bundle.
+# The bundle holds a fixed handful of files, so overwriting in place is enough — no
+# need to delete the previous one.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP="$ROOT/build/DisplaySnooze.app"
 ICONSET="$ROOT/build/AppIcon.iconset"
 ICNS="$ROOT/build/AppIcon.icns"
-# 配色を試したいときは ICON_VARIANT=light で切り替えられる。
+# Set ICON_VARIANT=light to try the alternative color scheme.
 ICON_VARIANT="${ICON_VARIANT:-dark}"
 
 swift build -c release --package-path "$ROOT"
 BIN="$(swift build -c release --package-path "$ROOT" --show-bin-path)/DisplaySnooze"
 
-# アイコンはデザインを変えたときだけ描き直す。毎回だと数秒かかるため。
+# Redraw the icon only when its source changed; rendering costs a few seconds.
 if [[ ! -f "$ICNS" || "$ROOT/scripts/make-icon.swift" -nt "$ICNS" ]]; then
 	echo "rendering icon ($ICON_VARIANT)..."
 	swift "$ROOT/scripts/make-icon.swift" "$ICON_VARIANT" "$ICONSET"
@@ -25,7 +26,7 @@ cp -f "$BIN" "$APP/Contents/MacOS/DisplaySnooze"
 cp -f "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 cp -f "$ICNS" "$APP/Contents/Resources/AppIcon.icns"
 
-# ad-hoc 署名。手元で動かすだけなのでこれで足りる。
+# Ad-hoc signature. Enough for running the app on this machine.
 codesign --force --sign - "$APP"
 
 echo "built: $APP"

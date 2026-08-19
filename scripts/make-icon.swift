@@ -1,15 +1,15 @@
-// アプリアイコンの画像を描き、iconutil に渡す .iconset を書き出す。
-// Xcode の Icon Composer が使えない環境でも色や形を直せるよう、デザインそのものをコードで持つ。
+// Draws the app icon and writes the .iconset that iconutil turns into an .icns.
+// The design lives in code so it stays editable without Xcode's Icon Composer.
 
 import AppKit
 
-// MARK: - 色
+// MARK: - Color
 
-/// OKLCh を sRGB の色に変換する。デザイントークンを oklch のまま書けるようにするため。
+/// Converts OKLCh to an sRGB color, so the palette below can be written in OKLCh directly.
 /// - Parameters:
-///   - lightness: 0〜1 の明度。
-///   - chroma: 彩度。0 で無彩色。
-///   - hue: 色相（度）。
+///   - lightness: Lightness, 0 through 1.
+///   - chroma: Chroma. Zero is achromatic.
+///   - hue: Hue in degrees.
 func oklch(_ lightness: Double, _ chroma: Double, _ hue: Double) -> NSColor {
     let radians = hue * .pi / 180
     let a = chroma * cos(radians)
@@ -27,7 +27,7 @@ func oklch(_ lightness: Double, _ chroma: Double, _ hue: Double) -> NSColor {
     let green = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
     let blue = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
 
-    /// リニア値をガンマ補正して 0〜1 に収める。
+    /// Gamma-encodes a linear component and clamps it to 0 through 1.
     func encode(_ value: Double) -> CGFloat {
         let clamped = min(max(value, 0), 1)
         let encoded = clamped <= 0.0031308
@@ -39,7 +39,7 @@ func oklch(_ lightness: Double, _ chroma: Double, _ hue: Double) -> NSColor {
     return NSColor(srgbRed: encode(red), green: encode(green), blue: encode(blue), alpha: 1)
 }
 
-/// アイコン1案ぶんの配色。
+/// One color scheme for the icon.
 struct Palette {
     let backgroundTop: NSColor
     let backgroundBottom: NSColor
@@ -47,9 +47,9 @@ struct Palette {
 }
 
 enum Variant: String {
-    /// 濃い藍色の地に白いグリフ。
+    /// White glyph on a deep indigo ground.
     case dark
-    /// 明るい地に濃紺のグリフ。
+    /// Navy glyph on a light ground.
     case light
 
     var palette: Palette {
@@ -70,16 +70,17 @@ enum Variant: String {
     }
 }
 
-// MARK: - 描画
+// MARK: - Drawing
 
-/// 基準となるキャンバスの一辺。実際の出力はここから縮小する。
+/// The side of the reference canvas. Every output size is scaled down from this.
 let canvas: CGFloat = 1024
-/// macOS のアイコンは四辺に余白を取り、角丸の正方形に収める作法になっている。
+/// macOS icons leave a margin on all four sides and sit in a rounded square.
 let bodyInset: CGFloat = 100
 let cornerRadius: CGFloat = 185
 
-/// lucide の monitor-off を 24×24 の座標系のまま組み立て、切り欠き付きで1枚の画像にする。
-/// 切り欠きは背景を透かすため、本体とは別のレイヤーに描いてから合成する。
+/// Builds lucide's monitor-off in its native 24×24 coordinate space, notch included.
+/// The notch has to let the background through, so the glyph is drawn on its own layer
+/// and composited afterwards.
 func makeGlyph(color: NSColor) -> CGImage? {
     let side = Int(canvas)
     guard let rep = NSBitmapImageRep(
@@ -94,7 +95,7 @@ func makeGlyph(color: NSColor) -> CGImage? {
 
     context.translateBy(x: offset, y: offset)
     context.scaleBy(x: scale, y: scale)
-    // lucide は左上原点なので、上下を反転して同じ座標で書けるようにする。
+    // lucide uses a top-left origin, so flip the axis and write its coordinates verbatim.
     context.translateBy(x: 0, y: 24)
     context.scaleBy(x: 1, y: -1)
 
@@ -123,7 +124,8 @@ func makeGlyph(color: NSColor) -> CGImage? {
     slash.move(to: CGPoint(x: 3.2, y: 3.2))
     slash.addLine(to: CGPoint(x: 20.8, y: 20.8))
 
-    // 斜線の通り道を一度削り、線の両側に隙間を作る。lucide の *-off と同じ見せ方。
+    // Carve out the path of the slash first, leaving a gap on either side of it.
+    // This is how lucide draws its *-off variants.
     context.setBlendMode(.destinationOut)
     context.setLineWidth(stroke * 2.6)
     context.addPath(slash)
@@ -137,7 +139,7 @@ func makeGlyph(color: NSColor) -> CGImage? {
     return context.makeImage()
 }
 
-/// アイコン1枚を描いて PNG データを返す。
+/// Renders one icon at the given size and returns PNG data.
 func render(size: CGFloat, variant: Variant) -> Data? {
     let side = Int(size)
     guard let rep = NSBitmapImageRep(
@@ -190,7 +192,7 @@ func render(size: CGFloat, variant: Variant) -> Data? {
     return rep.representation(using: .png, properties: [:])
 }
 
-// MARK: - 書き出し
+// MARK: - Output
 
 guard CommandLine.arguments.count >= 3,
       let variant = Variant(rawValue: CommandLine.arguments[1]) else {
@@ -201,7 +203,7 @@ guard CommandLine.arguments.count >= 3,
 let outputDirectory = URL(fileURLWithPath: CommandLine.arguments[2])
 try? FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
 
-/// iconutil が期待するファイル名とピクセル数の対応。
+/// The file names and pixel sizes iconutil expects to find in an .iconset.
 let entries: [(name: String, pixels: CGFloat)] = [
     ("icon_16x16.png", 16), ("icon_16x16@2x.png", 32),
     ("icon_32x32.png", 32), ("icon_32x32@2x.png", 64),

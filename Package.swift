@@ -1,6 +1,7 @@
 // swift-tools-version: 6.0
-// DisplaySnooze のパッケージ定義。Xcode を使わず swift build だけで実行ファイルを作る最小構成。
-// 出来た実行ファイルは scripts/build-app.sh が .app バンドルへ詰め直す。
+// Package definition for DisplaySnooze: the minimum needed to produce an executable
+// with swift build alone, no Xcode involved.
+// scripts/build-app.sh then wraps that executable into an .app bundle.
 
 import PackageDescription
 

@@ -1,6 +1,6 @@
-// メニューバーのアイコンとメニューを組み立てる。画面の並びは開くたびに作り直す。
-// 表示と入力の受け取りだけを担当し、画面の切り替えは DisplayController、自動起動は LaunchAtLogin に任せる。
-// 表示する文言は英語。コード中の説明は日本語で書く。
+// The menu bar icon and its menu. The list of displays is rebuilt every time the menu opens.
+// This file only presents and receives input; DisplayController performs the switching and
+// LaunchAtLogin owns the login item.
 
 import AppKit
 
@@ -9,7 +9,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private let statusItem: NSStatusItem
     private let controller: DisplayController
 
-    /// メニューに出すアプリ名。Info.plist を正とするので、名前を変えても追従する。
+    /// The app name shown in the menu. Read from Info.plist so a rename carries through.
     private let appName: String =
         Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "DisplaySnooze"
 
@@ -24,7 +24,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         updateIcon()
     }
 
-    // MARK: - メニューの組み立て
+    // MARK: - Building the menu
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
@@ -68,7 +68,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         addQuitItem(to: menu)
     }
 
-    /// 自動起動の切り替えと、承認待ちのときの案内を並べる。
+    /// The launch-at-login toggle, plus a way out when approval is pending.
     private func addLaunchAtLoginItems(to menu: NSMenu) {
         let toggle = NSMenuItem(
             title: "Open at Login",
@@ -89,14 +89,14 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(approve)
     }
 
-    /// 終了項目にはアプリ名を入れる。メニューバー常駐アプリは名前を出す場所がここしかない。
+    /// The quit item carries the app name: a menu bar app has nowhere else to state it.
     private func addQuitItem(to menu: NSMenu) {
         let quit = NSMenuItem(title: "Quit \(appName)", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
     }
 
-    // MARK: - 操作
+    // MARK: - Actions
 
     @objc private func toggleDisplay(_ sender: NSMenuItem) {
         guard let number = sender.representedObject as? NSNumber else { return }
@@ -131,9 +131,9 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         NSApp.terminate(nil)
     }
 
-    // MARK: - 見た目
+    // MARK: - Appearance
 
-    /// 切り離し中の画面があるかどうかでアイコンを変える。
+    /// The icon reflects whether any display is currently detached.
     func updateIcon() {
         guard let button = statusItem.button else { return }
         let name = controller.disabled.isEmpty ? "display" : "display.slash"

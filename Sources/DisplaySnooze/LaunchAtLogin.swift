@@ -1,25 +1,27 @@
-// ログイン時の自動起動の登録と解除。macOS 13 以降の ServiceManagement を使う。
-// 登録すると macOS が通知を出し、以後はシステム設定のログイン項目から有効/無効を切り替えられる。
+// Registering and unregistering the app as a login item, through ServiceManagement
+// (macOS 13 and later).
+// Registering makes macOS post its own notification, after which System Settings owns
+// the approval.
 
 import Foundation
 import ServiceManagement
 
 @MainActor
 enum LaunchAtLogin {
-    /// 今の登録状態。.app バンドルとして起動していない場合は .notFound になる。
+    /// The current registration state. Reports .notFound when the app is not running from a bundle.
     static var status: SMAppService.Status { SMAppService.mainApp.status }
 
-    /// 登録済みで、実際に自動起動する状態か。
+    /// Whether the app is registered and will actually launch.
     static var isEnabled: Bool { status == .enabled }
 
-    /// ユーザーがシステム設定で許可し直す必要がある状態か。
-    /// 一度ログイン項目から無効にされると、アプリ側からは戻せずこの状態になる。
+    /// Whether the user has to re-approve it in System Settings.
+    /// Once disabled from the Login Items pane, the app cannot re-enable itself and lands here.
     static var needsApproval: Bool { status == .requiresApproval }
 
-    /// 自動起動を有効または無効にする。
-    /// 初回の有効化では macOS が「バックグラウンド項目が追加されました」という通知を出す。
-    /// - Parameter enabled: true で登録、false で解除。
-    /// - Throws: 署名やバンドルの条件を満たさず OS が登録を拒否した場合。
+    /// Turns launching at login on or off.
+    /// The first registration triggers the "background item added" notification from macOS.
+    /// - Parameter enabled: True registers, false unregisters.
+    /// - Throws: When the OS refuses the registration, for instance over signing or bundle requirements.
     static func setEnabled(_ enabled: Bool) throws {
         if enabled {
             try SMAppService.mainApp.register()
@@ -28,7 +30,7 @@ enum LaunchAtLogin {
         }
     }
 
-    /// システム設定のログイン項目の画面を開く。承認待ちのときの導線。
+    /// Opens the Login Items pane in System Settings. The route out of the approval-pending state.
     static func openSettings() {
         SMAppService.openSystemSettingsLoginItems()
     }
