@@ -2,6 +2,8 @@
 
 A macOS menu bar app that turns external displays off and back on. That is all it does.
 
+![The DisplaySnooze menu, listing the built-in display and an external CG2420](docs/screenshot.png)
+
 日本語版は [README.ja.md](README.ja.md)。
 
 ## Why
@@ -40,7 +42,7 @@ The app is **not signed with an Apple Developer ID**, so macOS blocks it the fir
 2. Go to **System Settings → Privacy & Security**, scroll down to **Security**, and click **Open Anyway** next to DisplaySnooze
 3. Confirm with **Open**
 
-You only do this once. On macOS 15 and later the old Control-click shortcut no longer works, so System Settings is the only route.
+You only do this once. On macOS 15 and later the old Control-click shortcut no longer works, so System Settings is the only route. Everything else works normally without a Developer ID, including the **Open at Login** toggle.
 
 Signing properly requires an Apple Developer Program membership at $99 a year, which is more than a one-feature tool is worth. Building from source skips the prompt entirely, because the app is then signed by your own machine.
 
