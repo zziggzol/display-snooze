@@ -49,14 +49,23 @@ final class DisplayController {
     /// 切り離し機能が使えるか。使えない macOS では UI 側で理由を出す。
     var isSupported: Bool { configureDisplayEnabled != nil }
 
+    /// 同じ処理が SkyLight では新旧2つの名前で、CoreGraphics では旧名だけで公開されている。
+    /// どれかが将来消えても動くよう、新しい名前から順に探す。
+    private static let candidates: [(library: String, symbol: String)] = [
+        ("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight", "SLSConfigureDisplayEnabled"),
+        ("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight", "CGSConfigureDisplayEnabled"),
+        ("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", "CGSConfigureDisplayEnabled"),
+    ]
+
     init() {
-        let path = "/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight"
-        guard let handle = dlopen(path, RTLD_NOW),
-              let symbol = dlsym(handle, "CGSConfigureDisplayEnabled") else {
-            configureDisplayEnabled = nil
-            return
+        var resolved: ConfigureDisplayEnabled?
+        for candidate in Self.candidates {
+            guard let handle = dlopen(candidate.library, RTLD_NOW),
+                  let symbol = dlsym(handle, candidate.symbol) else { continue }
+            resolved = unsafeBitCast(symbol, to: ConfigureDisplayEnabled.self)
+            break
         }
-        configureDisplayEnabled = unsafeBitCast(symbol, to: ConfigureDisplayEnabled.self)
+        configureDisplayEnabled = resolved
     }
 
     /// 繋がっている画面を、切り離し済みのものも含めて返す。内蔵を先頭に並べる。

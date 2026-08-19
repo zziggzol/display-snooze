@@ -58,7 +58,9 @@ Apple Silicon の DDC は USB-C の DisplayPort Alt Mode 接続でしか通ら�
 
 この方式には利点もあって、**接続方式を問わず効く**。DVI 変換アダプタ経由でも動く。
 
-依存はこの1つだけで、`Sources/DisplaySnooze/DisplayController.swift` の中に閉じ込めてある。
+同じ処理は SkyLight では `SLSConfigureDisplayEnabled` と `CGSConfigureDisplayEnabled` の2つの名前で、CoreGraphics では後者だけで公開されている。将来どれかが消えても動くよう、新しい名前から順に探す。
+
+非公開 API への依存はこれだけで、`Sources/DisplaySnooze/DisplayController.swift` の中に閉じ込めてある。
 
 ## 動作を確認した環境
 
