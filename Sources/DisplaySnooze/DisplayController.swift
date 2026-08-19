@@ -22,11 +22,11 @@ enum DisplayControlError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .symbolUnavailable:
-            return "この macOS には画面の切り離しに必要な機能が見つかりませんでした。"
+            return "This version of macOS does not provide the function needed to turn displays off."
         case .wouldLeaveNoScreen:
-            return "最後の1枚は切り離せません。何も映らなくなってしまいます。"
+            return "The last active display cannot be turned off — no screen would be left to work on."
         case .configurationFailed(let error):
-            return "画面設定の変更に失敗しました（コード \(error.rawValue)）。"
+            return "macOS refused the display change (code \(error.rawValue))."
         }
     }
 }
@@ -68,7 +68,7 @@ final class DisplayController {
             .map { id in
                 DisplayInfo(
                     id: id,
-                    name: cachedNames[id] ?? "画面 \(id)",
+                    name: cachedNames[id] ?? "Display \(id)",
                     isBuiltin: CGDisplayIsBuiltin(id) != 0,
                     isActive: active.contains(id)
                 )

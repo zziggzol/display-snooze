@@ -1,5 +1,6 @@
 // メニューバーのアイコンとメニューを組み立てる。画面の並びは開くたびに作り直す。
 // 表示と入力の受け取りだけを担当し、画面の切り替えは DisplayController、自動起動は LaunchAtLogin に任せる。
+// 表示する文言は英語。コード中の説明は日本語で書く。
 
 import AppKit
 
@@ -7,6 +8,10 @@ import AppKit
 final class StatusMenu: NSObject, NSMenuDelegate {
     private let statusItem: NSStatusItem
     private let controller: DisplayController
+
+    /// メニューに出すアプリ名。Info.plist を正とするので、名前を変えても追従する。
+    private let appName: String =
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "DisplaySnooze"
 
     init(controller: DisplayController) {
         self.controller = controller
@@ -24,8 +29,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        if !controller.isSupported {
-            let item = NSMenuItem(title: "この Mac では使えません", action: nil, keyEquivalent: "")
+        guard controller.isSupported else {
+            let item = NSMenuItem(title: "Not available on this Mac", action: nil, keyEquivalent: "")
             item.isEnabled = false
             menu.addItem(item)
             menu.addItem(.separator())
@@ -48,7 +53,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         let restore = NSMenuItem(
-            title: "すべて戻す",
+            title: "Restore All Displays",
             action: #selector(restoreAll),
             keyEquivalent: "d"
         )
@@ -66,7 +71,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     /// 自動起動の切り替えと、承認待ちのときの案内を並べる。
     private func addLaunchAtLoginItems(to menu: NSMenu) {
         let toggle = NSMenuItem(
-            title: "ログイン時に起動",
+            title: "Open at Login",
             action: #selector(toggleLaunchAtLogin(_:)),
             keyEquivalent: ""
         )
@@ -76,7 +81,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
         guard LaunchAtLogin.needsApproval else { return }
         let approve = NSMenuItem(
-            title: "システム設定で許可する…",
+            title: "Allow in System Settings…",
             action: #selector(openLoginItemSettings),
             keyEquivalent: ""
         )
@@ -84,8 +89,9 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(approve)
     }
 
+    /// 終了項目にはアプリ名を入れる。メニューバー常駐アプリは名前を出す場所がここしかない。
     private func addQuitItem(to menu: NSMenu) {
-        let quit = NSMenuItem(title: "終了", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "Quit \(appName)", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
     }
@@ -100,7 +106,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             try controller.setEnabled(id, turnOn)
             updateIcon()
         } catch {
-            present(error, title: "画面を切り替えられませんでした")
+            present(error, title: "Could not change the display")
         }
     }
 
@@ -113,7 +119,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         do {
             try LaunchAtLogin.setEnabled(sender.state == .off)
         } catch {
-            present(error, title: "自動起動を設定できませんでした")
+            present(error, title: "Could not change the login item")
         }
     }
 
@@ -131,8 +137,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     func updateIcon() {
         guard let button = statusItem.button else { return }
         let name = controller.disabled.isEmpty ? "display" : "display.slash"
-        let image = NSImage(systemSymbolName: name, accessibilityDescription: "DisplaySnooze")
-            ?? NSImage(systemSymbolName: "display", accessibilityDescription: "DisplaySnooze")
+        let image = NSImage(systemSymbolName: name, accessibilityDescription: appName)
+            ?? NSImage(systemSymbolName: "display", accessibilityDescription: appName)
         image?.isTemplate = true
         button.image = image
     }
