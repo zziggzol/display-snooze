@@ -10,6 +10,7 @@ Lunar や BetterDisplay の「ディスプレイを切る」機能だけが欲�
 チェックが付いているのが表示中。クリックで切り替わる。
 
 - **すべて戻す** — `⌃⌥⌘D`。メニューに手が届かなくなったときの保険
+- **ログイン時に起動** — チェックを入れると自動起動が有効になる。初回は macOS が「バックグラウンド項目が追加されました」と通知するので、以後はシステム設定 → 一般 → ログイン項目 からも許可・解除できる
 - **終了** — 終了時に切り離した画面をすべて戻す
 
 ## 安全のしくみ
@@ -28,8 +29,6 @@ Xcode は不要。Command Line Tools だけで作れる。
 ./scripts/build-app.sh
 open build/DisplaySnooze.app
 ```
-
-ログイン時に自動で起動させたい場合は、システム設定 → 一般 → ログイン項目 に `build/DisplaySnooze.app` を追加する。
 
 ## しくみ
 
@@ -56,6 +55,7 @@ MacBook Air (M5) / macOS 26.6.1 / EIZO CG2420 を変換アダプタ経由で接�
 
 - 非公開 API を使っているので、将来の macOS で動かなくなる可能性がある。その場合はメニューに「この Mac では使えません」と出る
 - 長時間切り離したままにした場合や、その間にケーブルを抜き差しした場合もウィンドウ配置が保たれるかは未検証
+- 自動起動には `.app` の置き場所が記録される。フォルダごと移動したり `build/` を作り直した場合は、チェックを入れ直す必要がある
 
 ## 構成
 
@@ -65,4 +65,5 @@ MacBook Air (M5) / macOS 26.6.1 / EIZO CG2420 を変換アダプタ経由で接�
 | `Sources/DisplaySnooze/DisplayController.swift` | 切り離し・復帰の中核。非公開 API はここだけ |
 | `Sources/DisplaySnooze/StatusMenu.swift` | メニューバーの表示 |
 | `Sources/DisplaySnooze/HotKey.swift` | `⌃⌥⌘D` の登録 |
+| `Sources/DisplaySnooze/LaunchAtLogin.swift` | 自動起動の登録・解除（`SMAppService`） |
 | `scripts/build-app.sh` | `.app` の組み立てと ad-hoc 署名 |

@@ -1,5 +1,5 @@
 // メニューバーのアイコンとメニューを組み立てる。画面の並びは開くたびに作り直す。
-// 表示と入力の受け取りだけを担当し、実際の切り替えは DisplayController に任せる。
+// 表示と入力の受け取りだけを担当し、画面の切り替えは DisplayController、自動起動は LaunchAtLogin に任せる。
 
 import AppKit
 
@@ -58,7 +58,30 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(restore)
 
         menu.addItem(.separator())
+        addLaunchAtLoginItems(to: menu)
+        menu.addItem(.separator())
         addQuitItem(to: menu)
+    }
+
+    /// 自動起動の切り替えと、承認待ちのときの案内を並べる。
+    private func addLaunchAtLoginItems(to menu: NSMenu) {
+        let toggle = NSMenuItem(
+            title: "ログイン時に起動",
+            action: #selector(toggleLaunchAtLogin(_:)),
+            keyEquivalent: ""
+        )
+        toggle.target = self
+        toggle.state = LaunchAtLogin.isEnabled ? .on : .off
+        menu.addItem(toggle)
+
+        guard LaunchAtLogin.needsApproval else { return }
+        let approve = NSMenuItem(
+            title: "システム設定で許可する…",
+            action: #selector(openLoginItemSettings),
+            keyEquivalent: ""
+        )
+        approve.target = self
+        menu.addItem(approve)
     }
 
     private func addQuitItem(to menu: NSMenu) {
@@ -77,13 +100,25 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             try controller.setEnabled(id, turnOn)
             updateIcon()
         } catch {
-            present(error)
+            present(error, title: "画面を切り替えられませんでした")
         }
     }
 
     @objc private func restoreAll() {
         controller.restoreAll()
         updateIcon()
+    }
+
+    @objc private func toggleLaunchAtLogin(_ sender: NSMenuItem) {
+        do {
+            try LaunchAtLogin.setEnabled(sender.state == .off)
+        } catch {
+            present(error, title: "自動起動を設定できませんでした")
+        }
+    }
+
+    @objc private func openLoginItemSettings() {
+        LaunchAtLogin.openSettings()
     }
 
     @objc private func quit() {
@@ -102,9 +137,9 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         button.image = image
     }
 
-    private func present(_ error: Error) {
+    private func present(_ error: Error, title: String) {
         let alert = NSAlert()
-        alert.messageText = "画面を切り替えられませんでした"
+        alert.messageText = title
         alert.informativeText = error.localizedDescription
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
