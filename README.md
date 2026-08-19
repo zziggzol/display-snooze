@@ -21,14 +21,32 @@ Lunar や BetterDisplay の「ディスプレイを切る」機能だけが欲�
 2. `⌃⌥⌘D` でいつでも全部戻せる
 3. 設定はセッション限り（`.forSession`）なので、再起動すれば必ず元に戻る
 
-## ビルド
+## ビルドとインストール
 
 Xcode は不要。Command Line Tools だけで作れる。
+
+```sh
+./scripts/install.sh
+```
+
+ビルドして `/Applications/DisplaySnooze.app` に置き、起動するところまでやる。動いているものがあれば入れ替える。
+
+インストールせず手元で試すだけなら次のとおり。
 
 ```sh
 ./scripts/build-app.sh
 open build/DisplaySnooze.app
 ```
+
+## アイコン
+
+`scripts/make-icon.swift` がコードで描いている。lucide の `monitor-off` が下敷きで、色は oklch で定義してある。ビルド時に更新を見て、変わっていれば描き直す。
+
+```sh
+ICON_VARIANT=light ./scripts/build-app.sh
+```
+
+明るい配色も用意してある。既定は濃い藍。
 
 ## しくみ
 
@@ -55,7 +73,7 @@ MacBook Air (M5) / macOS 26.6.1 / EIZO CG2420 を変換アダプタ経由で接�
 
 - 非公開 API を使っているので、将来の macOS で動かなくなる可能性がある。その場合はメニューに「この Mac では使えません」と出る
 - 長時間切り離したままにした場合や、その間にケーブルを抜き差しした場合もウィンドウ配置が保たれるかは未検証
-- 自動起動には `.app` の置き場所が記録される。フォルダごと移動したり `build/` を作り直した場合は、チェックを入れ直す必要がある
+- 自動起動には `.app` の置き場所が記録される。`build/` の中のものと `/Applications` のものは別々に扱われるので、常用する側で登録し直す
 
 ## 構成
 
@@ -66,4 +84,6 @@ MacBook Air (M5) / macOS 26.6.1 / EIZO CG2420 を変換アダプタ経由で接�
 | `Sources/DisplaySnooze/StatusMenu.swift` | メニューバーの表示 |
 | `Sources/DisplaySnooze/HotKey.swift` | `⌃⌥⌘D` の登録 |
 | `Sources/DisplaySnooze/LaunchAtLogin.swift` | 自動起動の登録・解除（`SMAppService`） |
+| `scripts/make-icon.swift` | アイコンの描画と `.iconset` の書き出し |
 | `scripts/build-app.sh` | `.app` の組み立てと ad-hoc 署名 |
+| `scripts/install.sh` | `/Applications` への配置と入れ替え |
